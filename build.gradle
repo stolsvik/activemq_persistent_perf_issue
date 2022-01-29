@@ -1,0 +1,31 @@
+// Customize the Gradle Wrapper generation task.
+wrapper {
+    gradleVersion = "7.3.3"
+    // Use "-all"-version of distribution, since IntelliJ works better then..
+    setDistributionType(Wrapper.DistributionType.ALL)
+}
+
+apply plugin: 'java'
+
+repositories { mavenCentral() }
+
+// Versions for all libraries used throughout the subprojects
+ext {
+    activeMqVersion = '5.16.3'
+    slf4jVersion = '1.7.33'
+    logbackVersion = '1.2.10'
+    jmsApiVersion = '1.1-rev-1'
+    junitVersion = '4.13.2'
+}
+
+
+dependencies {
+    implementation "org.apache.activemq:activemq-broker:$activeMqVersion"
+    implementation "org.apache.activemq:activemq-kahadb-store:$activeMqVersion"
+
+    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation "org.slf4j:log4j-over-slf4j:$slf4jVersion"
+    implementation "ch.qos.logback:logback-classic:$logbackVersion"
+
+    testImplementation "junit:junit:$junitVersion"
+}
