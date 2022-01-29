@@ -23,9 +23,15 @@ entire storage of the broker, it still handles this aspect of Transactional mess
 It would have been valuable to be able to "selectively" turn off this pretty massive hit of flushing to disk if the
 messages inside the Transaction was non-Persistent. 
 
+Also: Only the ```jmsProducer.setDeliveryMode(..)``` have any effect on the timing: If employing the 
+```jmsMessage.setJMSDeliveryMode(..)``` method to get semantically exactly the same messages sent with same DeliveryMode
+(that is, PERSISTENT vs. NON_PERSISTENT), you lose out on those blazing fast "non-Transactional, non-Persistent"
+timings.
+
 Note: The Java class in this repo uses an in-vm broker, with the "vm://" connection. However, this situation was first
 observed with a remote broker, so the effects of interest are the same over TCP or over VM.
 
+When setting DeliveryMode (PERSISTENT vs. NON_PERSISTENT) on both jmsProducer and jmsMessage:
 ```
  Each test is time for sending and in case of 'Transactional', committing, [1000] messages
  
@@ -42,4 +48,21 @@ observed with a remote broker, so the effects of interest are the same over TCP 
  PERIODIC, Transactional, non-Persistent:   [39.030052] ms 
  PERIODIC, Transactional, Persistent:   [94.339609] ms 
 
+```
+
+When setting DeliveryMode (PERSISTENT vs. NON_PERSISTENT) *only on jmsMessage*:
+```
+Each test is time for sending and in case of 'Transactional', committing, [1000] messages
+no store, non-Transactional, non-Persistent:   [32.237903] ms   <- This is no longer superfast
+no store, non-Transactional, Persistent:   [27.756596] ms
+no store, Transactional, non-Persistent:   [37.082023] ms
+no store, Transactional, Persistent:   [35.110782] ms
+ALWAYS, non-Transactional, non-Persistent:   [4108.457421] ms   <- ... and neither this
+ALWAYS, non-Transactional, Persistent:   [4102.393857] ms
+ALWAYS, Transactional, non-Persistent:   [3954.603762] ms
+ALWAYS, Transactional, Persistent:   [3978.435732] ms
+PERIODIC, non-Transactional, non-Persistent:   [58.224914] ms   <- .. nor this
+PERIODIC, non-Transactional, Persistent:   [81.982655] ms
+PERIODIC, Transactional, non-Persistent:   [67.837032] ms
+PERIODIC, Transactional, Persistent:   [58.78441] ms
 ```

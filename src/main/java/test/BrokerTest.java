@@ -38,23 +38,23 @@ public class BrokerTest {
     private static final int NUM_MESSAGES_MAIN = 1000;
 
     public void runTest() throws Exception {
+        int multiple = 1;
         // WARMUP
-        runTest(NUM_MESSAGES_MAIN * 100, null, false, false);
+        runTest(NUM_MESSAGES_MAIN * multiple, null, false, false);
         runTest(NUM_MESSAGES_MAIN, null, false, true);
         runTest(NUM_MESSAGES_MAIN, null, true, false);
         runTest(NUM_MESSAGES_MAIN, null, true, true);
-        runTest(NUM_MESSAGES_MAIN * 100, JournalDiskSyncStrategy.ALWAYS, false, false);
+        runTest(NUM_MESSAGES_MAIN * multiple, JournalDiskSyncStrategy.ALWAYS, false, false);
         runTest(NUM_MESSAGES_MAIN, JournalDiskSyncStrategy.ALWAYS, false, true);
         runTest(NUM_MESSAGES_MAIN, JournalDiskSyncStrategy.ALWAYS, true, false);
         runTest(NUM_MESSAGES_MAIN, JournalDiskSyncStrategy.ALWAYS, true, true);
-        runTest(NUM_MESSAGES_MAIN * 100, JournalDiskSyncStrategy.PERIODIC, false, false);
+        runTest(NUM_MESSAGES_MAIN * multiple, JournalDiskSyncStrategy.PERIODIC, false, false);
         runTest(NUM_MESSAGES_MAIN, JournalDiskSyncStrategy.PERIODIC, false, true);
         runTest(NUM_MESSAGES_MAIN, JournalDiskSyncStrategy.PERIODIC, true, false);
         runTest(NUM_MESSAGES_MAIN, JournalDiskSyncStrategy.PERIODIC, true, true);
 
         // MEASURE
         // Note: The non-Transactional & non-Persistent are so fast that we increase the number of messages.
-        int multiple = 100;
 
         double nnn = runTest(NUM_MESSAGES_MAIN * multiple, null, false, false);
         double nnp = runTest(NUM_MESSAGES_MAIN, null, false, true);
@@ -97,6 +97,11 @@ public class BrokerTest {
         if (syncStrategy != null) {
             KahaDBPersistenceAdapter kahaDBPersistenceAdapter = new KahaDBPersistenceAdapter();
             kahaDBPersistenceAdapter.setJournalDiskSyncStrategy(syncStrategy.name());
+            // NOTE: This following value is default 1000, i.e. sync interval of 1 sec.
+            // Interestingly, setting it to a much lower value, e.g. 10 or 25, seemingly doesn't severely impact
+            // performance of the PERIODIC strategy. Thus, instead of potentially losing a full second's worth of
+            // messages if someone literally pulled the power cord of the ActiveMQ instance, you'd lose much less.
+            kahaDBPersistenceAdapter.setJournalDiskSyncInterval(25);
             brokerService.setPersistenceAdapter(kahaDBPersistenceAdapter);
         }
         else {
@@ -141,6 +146,9 @@ public class BrokerTest {
                 : connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         Queue queue = session.createQueue(TEST_QUEUE);
         MessageProducer producer = session.createProducer(queue);
+        // NOTICE: It does NOT matter whether an individual message is set NON_PERSISTENT.
+        // Only the producer's DeliveryMode counts.
+        // !! Try commenting out this line, which really shouldn't have changed the semantics
         producer.setDeliveryMode(persistent ? DeliveryMode.PERSISTENT : DeliveryMode.NON_PERSISTENT);
         log.info("============ Starting sending of [" + numMessages + "] messages");
         long nanosStart_send = System.nanoTime();
@@ -149,7 +157,8 @@ public class BrokerTest {
             textMsg.setText("Text:" + i);
 
             // NOTICE: It does NOT matter whether an individual message is set NON_PERSISTENT.
-            textMsg.setJMSDeliveryMode(DeliveryMode.NON_PERSISTENT);
+            // Only the producer's DeliveryMode counts.
+            textMsg.setJMSDeliveryMode(persistent ? DeliveryMode.PERSISTENT : DeliveryMode.NON_PERSISTENT);
             producer.send(textMsg);
             if (transactional) {
                 session.commit();
