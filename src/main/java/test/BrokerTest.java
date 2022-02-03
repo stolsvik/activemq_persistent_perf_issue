@@ -38,7 +38,7 @@ public class BrokerTest {
     private static final int NUM_MESSAGES_MAIN = 1000;
 
     public void runTest() throws Exception {
-        int multiple = 1;
+        int multiple = 50;
         // WARMUP
         runTest(NUM_MESSAGES_MAIN * multiple, null, false, false);
         runTest(NUM_MESSAGES_MAIN, null, false, true);
@@ -146,9 +146,8 @@ public class BrokerTest {
                 : connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         Queue queue = session.createQueue(TEST_QUEUE);
         MessageProducer producer = session.createProducer(queue);
-        // NOTICE: It does NOT matter whether an individual message is set NON_PERSISTENT.
-        // Only the producer's DeliveryMode counts.
-        // !! Try commenting out this line, which really shouldn't have changed the semantics
+        // NOTICE: It makes no difference whether you set the DeliveryMode on the producer, or when sending msg.
+        // Either you set it here on the producer, or below on the send.
         producer.setDeliveryMode(persistent ? DeliveryMode.PERSISTENT : DeliveryMode.NON_PERSISTENT);
         log.info("============ Starting sending of [" + numMessages + "] messages");
         long nanosStart_send = System.nanoTime();
@@ -156,9 +155,9 @@ public class BrokerTest {
             TextMessage textMsg = session.createTextMessage();
             textMsg.setText("Text:" + i);
 
-            // NOTICE: It does NOT matter whether an individual message is set NON_PERSISTENT.
-            // Only the producer's DeliveryMode counts.
-            textMsg.setJMSDeliveryMode(persistent ? DeliveryMode.PERSISTENT : DeliveryMode.NON_PERSISTENT);
+            // NOTICE: It makes no difference whether you set the DeliveryMode on the producer, or when sending msg.
+            // Either you set it here on the send, or above on the producer.
+            // producer.send(textMsg, persistent ? DeliveryMode.PERSISTENT : DeliveryMode.NON_PERSISTENT, 4, 0);
             producer.send(textMsg);
             if (transactional) {
                 session.commit();
