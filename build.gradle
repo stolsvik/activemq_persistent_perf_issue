@@ -7,14 +7,18 @@ wrapper {
 
 apply plugin: 'java'
 
+sourceCompatibility = JavaVersion.VERSION_17
+targetCompatibility = JavaVersion.VERSION_17
+
 repositories { mavenCentral() }
 
 // Versions for all libraries used throughout the subprojects
 ext {
-    activeMqVersion = '5.16.3'
-    slf4jVersion = '1.7.33'
-    logbackVersion = '1.2.10'
-    jmsApiVersion = '1.1-rev-1'
+    activeMqVersion = '5.18.1'
+
+    slf4jVersion = '2.0.7'
+    logbackVersion = '1.4.7'
+
     junitVersion = '4.13.2'
 }
 
